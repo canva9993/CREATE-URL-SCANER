@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Escanear o Crear QRL</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; background: #f0f0f0; padding: 20px; }
+    .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 0 10px #ccc; }
+    .hidden { display: none; }
+    input, button, select { margin: 10px 0; padding: 8px; width: 100%; }
+    canvas { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>QR Link Tool</h2>
+    <button onclick="showSection('scan')">Escanear QRL</button>
+    <button onclick="showSection('create')">Crear QRL</button>
+
+    <!-- Sección ESCANEAR -->
+    <div id="scan" class="hidden">
+      <h3>Sube imagen del código QRL</h3>
+      <input type="file" accept="image/*" id="qrImage">
+      <button onclick="scanQR()">Empezar</button>
+      <p id="scanResult"></p>
+    </div>
+
+    <!-- Sección CREAR -->
+    <div id="create" class="hidden">
+      <h3>Pega tu link</h3>
+      <input type="text" id="qrText" placeholder="https://example.com">
+      <label>Color del QRL:</label>
+      <input type="color" id="qrColor" value="#000000">
+      <label>Tamaño:</label>
+      <select id="qrSize">
+        <option value="150">150x150</option>
+        <option value="250" selected>250x250</option>
+        <option value="400">400x400</option>
+      </select>
+      <button onclick="generateQR()">Convertir</button>
+      <canvas id="qrCanvas"></canvas><br>
+      <button onclick="downloadQR()">Descargar</button>
+    </div>
+  </div>
+
+  <script>
+    function showSection(id) {
+      document.getElementById("scan").classList.add("hidden");
+      document.getElementById("create").classList.add("hidden");
+      document.getElementById(id).classList.remove("hidden");
+    }
+
+    function scanQR() {
+      const file = document.getElementById('qrImage').files[0];
+      if (!file) return alert("Selecciona una imagen.");
+
+      const reader = new FileReader();
+      reader.onload = function () {
+        const img = new Image();
+        img.onload = function () {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, canvas.width, canvas.height);
+          if (code) {
+            document.getElementById("scanResult").innerHTML = `🔗 <a href="${code.data}" target="_blank">${code.data}</a>`;
+          } else {
+            document.getElementById("scanResult").innerText = "No se detectó ningún código QR.";
+          }
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function generateQR() {
+      const text = document.getElementById("qrText").value;
+      const color = document.getElementById("qrColor").value;
+      const size = parseInt(document.getElementById("qrSize").value);
+      if (!text) return alert("Pega un link válido.");
+
+      const canvas = document.getElementById("qrCanvas");
+      QRCode.toCanvas(canvas, text, {
+        width: size,
+        color: { dark: color, light: "#ffffff" }
+      }, function (error) {
+        if (error) alert("Error al generar el QRL.");
+      });
+    }
+
+    function downloadQR() {
+      const canvas = document.getElementById("qrCanvas");
+      const link = document.createElement('a');
+      link.download = "qrl.png";
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+  </script>
+</body>
+</html>
